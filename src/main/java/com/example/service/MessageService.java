@@ -4,19 +4,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.entity.Message;
+import com.example.exception.ResourceNotFoundException;
+import com.example.repository.AccountRepository;
 import com.example.repository.MessageRepository;
 
-import java.util.*; 
+import java.util.List; 
 
 @Service
 public class MessageService {
 
-    MessageRepository messageRepository;
-    private List<Message> messageList = new ArrayList<>();
+    private final AccountRepository accountRepository;
+    private final MessageRepository messageRepository;
 
     @Autowired
-    public MessageService(MessageRepository messagerepository){
-        
+    public MessageService(AccountRepository accountRepository, MessageRepository messagerepository){
+        this.accountRepository = accountRepository;
         this.messageRepository = messagerepository;
     }
 
@@ -24,28 +26,25 @@ public class MessageService {
     //3. Create New Message
     public Message createMessage(Message message){
 
+        String text = message.getMessageText();
+
         // The creation of the message will be successful if and only if the message_text is not blank,
         // is under 255 characters, and posted_by refers to a real, existing user. 
-        if(message.getMessageText().isBlank() || message.getMessageText().length() > 254){
-            return null;
+        if(text == null || text.isBlank() || text.length() > 254){
+            throw new IllegalArgumentException("Message text is invalid");
+        }
+        
+        //Checking that posted_by refers to a real, existing user.
+        if(!accountRepository.existsById(message.getPostedBy())){
+            throw new IllegalArgumentException("Message field postedBy doesn't refer to a valid account.");
         }
 
-        //Checking if message refers to a real, existing user     
-        for(Message m : messageList){
-            if(m.getPostedBy() == message.getPostedBy()){}
-            else{
-                return null;
-            }   
-        }
-
-        messageList.add(message);
         return messageRepository.save(message);
     }
 
 
     //4. Get All Messages
-    public List<Message> getAllMessages(){
-        
+    public List<Message> getAllMessages(){  
         return messageRepository.findAll();
     }
 
@@ -54,7 +53,7 @@ public class MessageService {
     public Message getMessageById(int messageId){
         
         return messageRepository.findById(messageId)
-            .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));  
+            .orElseThrow(() -> new ResourceNotFoundException("Message not found with ID: " + messageId));  
     }
 
 
@@ -62,9 +61,8 @@ public class MessageService {
     public void deleteMessageById(int messageId){
 
         Message messageToDelete = messageRepository.findById(messageId)
-            .orElseThrow(() -> new RuntimeException("Message not found with ID: " + messageId));
+            .orElseThrow(() -> new ResourceNotFoundException("Message not found with ID: " + messageId));
         
-        messageList.remove(messageToDelete);
         messageRepository.delete(messageToDelete);
     }
 
@@ -73,9 +71,14 @@ public class MessageService {
     public Message updateMessageById(int messageId, Message newMessage){
 
         Message existingMessage = getMessageById(messageId);
-        existingMessage.setMessageId(newMessage.getMessageId());
-        existingMessage.setPostedBy(newMessage.getPostedBy());
-        existingMessage.setMessageText(newMessage.getMessageText());
+       
+        String newMessageText = newMessage.getMessageText();
+        if(newMessageText == null || newMessageText.isBlank() || newMessageText.length() > 254){
+            throw new IllegalArgumentException("Message text is invalid");
+
+        }
+
+        existingMessage.setMessageText(newMessageText);
         existingMessage.setTimePostedEpoch(newMessage.getTimePostedEpoch());
         
         return messageRepository.save(existingMessage);
@@ -83,10 +86,7 @@ public class MessageService {
 
 
     //8. Get All Messages From User Given Account Id
-    public List<Message> findAllMessagesById(int accountId){
-
-        return messageRepository.findAllById(accountId);
-       
+    public List<Message> findAllMessagesByAccountId(int accID){
+        return messageRepository.findAllByPostedBy(accID);
     }
-
 }
