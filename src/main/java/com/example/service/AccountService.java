@@ -33,7 +33,7 @@ public class AccountService {
         Account existingAccount = accountRepository.findByUsername(account.getUsername());
         
         if(existingAccount != null){
-            throw new EntityExistsException("Sorry, but that username already exist.");
+            throw new EntityExistsException("Sorry, but that username already exist!");
         } 
 
         return accountRepository.save(account);
