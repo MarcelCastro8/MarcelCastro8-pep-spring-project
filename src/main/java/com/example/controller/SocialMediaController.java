@@ -146,14 +146,14 @@ public class SocialMediaController {
      *  should respond with the same type of response.
      */  
     @DeleteMapping("/messages/{message_id}") 
-     
+
 
 
     
     @GetMapping("/accounts/{accountId}/messages")
     public ResponseEntity<List<Message>> getAllMessagesByAccountId(@PathVariable int accountId){
         
-        List<Message> messages = messageRepository.findAllByPostedBy(accountId);
-        return ResponseEntity.ok(messages);
+        List<Message> messages = messageService.findAllMessagesByAccountId(accountId);
+        return ResponseEntity.ok(messages); //200 OK
     }
 }
