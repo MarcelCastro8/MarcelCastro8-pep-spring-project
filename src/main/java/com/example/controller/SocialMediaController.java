@@ -10,8 +10,6 @@ import com.example.service.AccountService;
 import com.example.service.MessageService;
 
 import javax.persistence.EntityExistsException;
-
-import java.lang.annotation.Repeatable;
 import java.util.List;
 
 
@@ -145,14 +143,51 @@ public class SocialMediaController {
      *  This is because the DELETE verb is intended to be idempotent, ie, multiple calls to the DELETE endpoint
      *  should respond with the same type of response.
      */  
-    @DeleteMapping("/messages/{message_id}") 
-
-
-
+    @DeleteMapping("/messages/{message_id}")
+    public ResponseEntity<Integer> deleteMessageById(@PathVariable int message_id){
     
+        boolean deletedMessage = messageService.deleteMessageById(message_id);
+
+        if(deletedMessage){
+            return ResponseEntity.ok(1); // 1 row deleted
+        }
+        else{
+            return ResponseEntity.ok().build(); // 200, idempotent (message didn't exist, empty body)
+        }
+    }   
+
+
+    /** 7.Update Message Given Message Id
+      * As a user, I should be able to submit a PATCH request on the endpoint PATCH localhost:8080/messages/{message_id}. 
+      * The request body should contain a new message_text values to replace the message identified by message_id. 
+      * The request body cannot be guaranteed to contain any other information. The update of a message should be 
+      * successful if and only if the message id already exists and the new message_text is not blank and is not 
+      * over 255 characters. If the update is successful, the response body should contain the number of rows updated (1), 
+      * and the response status should be 200, which is the default. The message existing on the database should have the 
+      * updated message_text. If the update of the message is not successful for any reason, 
+      * the response status should be 400. (Client error)
+      */
+    @PatchMapping("/messages/{message_id}")
+    public ResponseEntity<Integer> updateMessageById(@PathVariable int message_id, @RequestBody Message newMessage){
+        try {
+            messageService.updateMessageById(message_id, newMessage);
+            return ResponseEntity.ok(1); // updated
+        } 
+        catch (Exception e) {
+            return ResponseEntity.badRequest().build(); // 400    
+        }
+    }
+
+
+    /** 8.Get All Messages From User Given Account Id
+      * As a user, I should be able to submit a GET request on the endpoint GET localhost:8080/accounts/{account_id}/messages.
+ 	  * The response body should contain a JSON representation of a list containing all messages posted by a particular user, 
+      * which is retrieved from the database. It is expected for the list to simply be empty if there are no messages. 
+      * The response status should always be 200, which is the default
+      */
     @GetMapping("/accounts/{accountId}/messages")
-    public ResponseEntity<List<Message>> getAllMessagesByAccountId(@PathVariable int accountId){
-        
+    public ResponseEntity<List<Message>> getAllMessagesByAccountId(@PathVariable int accountId){ 
+
         List<Message> messages = messageService.findAllMessagesByAccountId(accountId);
         return ResponseEntity.ok(messages); //200 OK
     }

@@ -58,12 +58,12 @@ public class MessageService {
 
 
     //6. Delete a Message Given Message Id
-    public void deleteMessageById(int messageId){
+    public boolean deleteMessageById(int messageId){
 
-        Message messageToDelete = messageRepository.findById(messageId)
-            .orElseThrow(() -> new ResourceNotFoundException("Message not found with ID: " + messageId));
-        
-        messageRepository.delete(messageToDelete);
+        return messageRepository.findById(messageId).
+            map(msg -> {
+                messageRepository.delete(msg);
+                return true;}).orElse(false);
     }
 
 
